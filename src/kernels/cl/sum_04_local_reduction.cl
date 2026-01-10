@@ -18,4 +18,24 @@ __kernel void sum_04_local_reduction(__global const uint* a,
     // barrier(CLK_LOCAL_MEM_FENCE);
 
     // TODO
+    uint gid = get_global_id(0);
+    uint lid = get_local_id(0);
+    uint group = get_group_id(0);
+    __local uint local_data[GROUP_SIZE];
+
+    if (gid < n) {
+        local_data[lid] = a[gid];
+    } else {
+       local_data[lid] = 0;
+    }
+    barrier(CLK_LOCAL_MEM_FENCE);
+    for (uint stride = GROUP_SIZE / 2; stride > 0; stride /= 2) {
+        if (lid < stride) {
+            local_data[lid] += local_data[lid + stride];
+        }
+        barrier(CLK_LOCAL_MEM_FENCE);
+    }
+    if (lid == 0) {
+        b[group] =  local_data[0];
+    }
 }
